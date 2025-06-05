@@ -1,9 +1,6 @@
 
-// supabase.js – forbind frontend til Supabase
-
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
+// supabase.js uden module-system
 const SUPABASE_URL = "https://fasajsconpwfnkjmkoxp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhc2Fqc2NvbnB3Zm5ram1rb3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjQ0NjksImV4cCI6MjA2NDcwMDQ2OX0.6GbhFuTUliFN4uMF1SwfP_uBiiw8X5p3_0aieFvqNDc";
 
-window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
