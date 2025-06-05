@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS-Teknik - Timer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    h1, h2, h3 {
+      color: #004466;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.05);
+    }
+
+    input, button, select {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #005f99;
+    }
+
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    li {
+      background: #e9f4fb;
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      border-radius: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .modal {
+      margin-top: 1rem;
+      background: #f0f0f0;
+      padding: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+
+      input, button, select {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007acc">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(() => console.log("✅ Service Worker registreret"))
+          .catch(err => console.log("❌ Service Worker fejl:", err));
+      });
+    }
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>EMS-Teknik</h1>
+
+    <div id="login-view">
+      <h2>Log ind</h2>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Adgangskode" />
+      <button onclick="login()">Log ind</button>
+      <p id="login-error" style="color: red;"></p>
+    </div>
+
+    <div id="app-view" class="hidden">
+      <h2>Velkommen!</h2>
+      <button onclick="logout()">Log ud</button>
+      <h3>Dine sager</h3>
+      <input type="text" id="search" placeholder="Søg i sager..." oninput="filterCases()" />
+      <ul id="case-list"></ul>
+
+      <button onclick="toggleModal()">➕ Opret sag</button>
+      <div id="modal" class="hidden modal">
+        <input type="text" id="new-case-name" placeholder="Navn på sag" />
+        <button onclick="createCase()">✅ Tilføj sag</button>
+        <p id="case-message" style="color: green;"></p>
+      </div>
+
+      <div class="modal">
+        <h3>Registrér timer</h3>
+        <select id="case-select"></select>
+        <input type="date" id="work-date" />
+        <input type="time" id="start-time" placeholder="Starttid" />
+        <input type="time" id="end-time" placeholder="Sluttid" />
+        <input type="number" id="pause-minutes" placeholder="Pause i minutter" />
+        <button onclick="registerHours()">📌 Gem timer</button>
+        <p id="time-message" style="color: green;"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="./supabase.js"></script>
+  <script>
+    let cases = [];
+
+    const loginView = document.getElementById("login-view");
+    const appView = document.getElementById("app-view");
+    const modal = document.getElementById("modal");
+    const caseList = document.getElementById("case-list");
+    const searchInput = document.getElementById("search");
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById("login-error").textContent = "❌ " + error.message;
+      } else {
+        loadCases();
+      }
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      loginView.classList.remove("hidden");
+      appView.classList.add("hidden");
+    }
+
+    async function loadCases() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      loginView.classList.add("hidden");
+      appView.classList.remove("hidden");
+
+      const { data, error } = await supabase.from("cases").select("*").eq("user_id", user.id);
+      if (data) {
+        cases = data;
+        renderCases(data);
+        renderCaseSelect(data);
+      }
+    }
+
+    function renderCases(data) {
+      caseList.innerHTML = "";
+      data.forEach(c => {
+        const li = document.createElement("li");
+        li.textContent = c.name;
+        caseList.appendChild(li);
+      });
+    }
+
+    function renderCaseSelect(data) {
+      const select = document.getElementById("case-select");
+      select.innerHTML = "";
+      data.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function filterCases() {
+      const search = searchInput.value.toLowerCase();
+      const filtered = cases.filter(c => c.name.toLowerCase().includes(search));
+      renderCases(filtered);
+    }
+
+    function toggleModal() {
+      modal.classList.toggle("hidden");
+      document.getElementById("case-message").textContent = "";
+    }
+
+    async function createCase() {
+      const name = document.getElementById("new-case-name").value;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from("cases").insert([{ user_id: user.id, name }]);
+      if (!error) {
+        document.getElementById("case-message").textContent = "✅ Sag oprettet!";
+        document.getElementById("new-case-name").value = "";
+        toggleModal();
+        loadCases();
+      }
+    }
+
+    async function registerHours() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const caseId = document.getElementById("case-select").value;
+      const date = document.getElementById("work-date").value;
+      const start = document.getElementById("start-time").value;
+      const end = document.getElementById("end-time").value;
+      const pause = parseInt(document.getElementById("pause-minutes").value) || 0;
+
+      const startTime = new Date(date + "T" + start);
+      const endTime = new Date(date + "T" + end);
+      const workedMinutes = (endTime - startTime) / 60000 - pause;
+      const hours = (workedMinutes / 60).toFixed(2);
+
+      const { error } = await supabase.from("timelogs").insert([{
+        user_id: user.id,
+        case_id: caseId,
+        date,
+        start_time: start,
+        end_time: end,
+        pause,
+        hours
+      }]);
+
+      if (!error) {
+        document.getElementById("time-message").textContent = `✅ ${hours} time(r) gemt`;
+      }
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) loadCases();
+    });
+  </script>
+</body>
+</html>
