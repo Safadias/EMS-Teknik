@@ -5,10 +5,19 @@
   <meta charset="UTF-8" />
   <title>EMS-Teknik</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
   <h1>EMS-Teknik Time Registrering</h1>
-  <p>Dette er en placeholder. Den rigtige app vil loade her med Supabase-integration.</p>
+  <p>Login og registrering bliver vist her.</p>
   <script src="./supabase.js"></script>
+  <script>
+    // Test at Supabase er tilgængelig
+    if (window.supabase) {
+      console.log("✅ Supabase loaded korrekt");
+    } else {
+      console.log("❌ Supabase blev ikke indlæst");
+    }
+  </script>
 </body>
 </html>
