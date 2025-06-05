@@ -12,6 +12,18 @@
   <p>Login og registrering bliver vist her.</p>
   <script src="./supabase.js"></script>
   <script>
+  async function testConnection() {
+    const { data, error } = await window.supabase.from("users").select("*");
+    if (error) {
+      console.error("❌ Supabase fejl:", error);
+    } else {
+      console.log("✅ Brugerdata hentet:", data);
+    }
+  }
+
+  testConnection();
+</script>
+  <script>
     if (window.supabase) {
       console.log("✅ Supabase loaded korrekt");
     } else {
